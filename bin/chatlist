@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+
+var _ = require('lodash');
+var sprintf = require('sprintf');
+var request = require('request');
+var Promise = require('bluebird').Promise;
+var io = require('socket.io-client');
+
+function onlineList() {
+  return new Promise(function(resolve, reject) {
+    var socket = io.connect('https://furstre.am:27000');
+
+    socket.on('connect', function(){
+    })
+
+    socket.emit('change channel', { channel: 'Norithics' });
+
+    socket.on('set channel', function() {
+      socket.emit('chat list');
+    })
+
+    socket.on('chat list', function(res) {
+      resolve(_.pluck(res.chatting, 'name'));
+    });
+  });
+}
+
+function queueList() {
+  var url = 'https://dl.dropboxusercontent.com/u/71379168/Norithics_Commissions.txt';
+
+  return Promise.fromNode(function(cb) {
+    request(url, cb);
+  }).then(function(response, body) {
+    var list = [ ];
+    var trigger = false;
+
+    response.toString().split(/\r?\n/).forEach(function(line) {
+      line = line.replace(/\s+\*/, '').trim();
+
+      if (line === '_Legend_') {
+        trigger = false;
+      }
+      else if (trigger && line.length > 0) {
+        list.push(line);
+      }
+      else if (line === '_Stream-Only_') {
+        trigger = true;
+      }
+    })
+
+    return list;
+  });
+}
+
+var program = require('commander')
+  .version('0.1.0')
+  .option('-a --all', 'Show everyone on list')
+  .parse(process.argv);
+
+Promise.props({
+  online: onlineList(),
+  queue: queueList()
+}).then(function(r) {
+  var queue = { };
+  var position = 1;
+
+  r.queue.forEach(function(name) {
+    queue[name.toLowerCase()] = {
+      name: name,
+      position: position
+    }
+
+    ++position;
+  });
+
+  r.online.forEach(function(name) {
+    var spot = queue[name.toLowerCase()];
+
+    if (spot) {
+      spot.online = true;
+    }
+  })
+
+  _.sortBy(_.values(queue), 'position').forEach(function(spot) {
+    if (!program.all && !spot.online) return;
+    console.log(sprintf('%2d. %s %s', spot.position, spot.name, spot.online ? '*' : ''));
+  })
+
+  process.exit(0);
+});

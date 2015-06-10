@@ -1,0 +1,19 @@
+{
+  "name": "norilist",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^2.9.27",
+    "lodash": "^3.9.3",
+    "request": "^2.57.0",
+    "socket.io": "^0.9.16",
+    "socket.io-client": "^0.9.16",
+    "sprintf": "^0.1.5"
+  }
+}
